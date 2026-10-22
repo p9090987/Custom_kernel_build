@@ -1,1 +1,55 @@
 
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <!-- NOTE: the GitHub org is "spring4ever" (not "spring4e") -->
+  <remote name="spring4ever" fetch="https://github.com/spring4ever" />
+
+  <!-- Replace LineageOS copies with the org's forks (same paths) -->
+  <remove-project name="LineageOS/android_hardware_qcom-caf_common" />
+  <remove-project name="LineageOS/android_vendor_qcom_opensource_agm" optional="true" />
+  <remove-project name="LineageOS/android_vendor_qcom_opensource_arpal-lx" optional="true" />
+  <remove-project name="LineageOS/android_vendor_qcom_opensource_audioreach-graphservices" optional="true" />
+  <remove-project name="LineageOS/android_vendor_qcom_opensource_dataipa" optional="true" />
+  <remove-project name="LineageOS/android_vendor_qcom_opensource_data-ipa-cfg-mgr" optional="true" />
+
+  <!-- Device, kernel (prebuilt), vendor blobs -->
+  <project path="device/xiaomi/spring"
+           name="android_device_xiaomi_spring"
+           remote="spring4ever" revision="lineage-24.0" />
+  <project path="device/xiaomi/spring-kernel"
+           name="android_device_xiaomi_spring-kernel"
+           remote="spring4ever" revision="lineage-24.0" />
+  <project path="vendor/xiaomi/spring"
+           name="android_vendor_xiaomi_spring"
+           remote="spring4ever" revision="lineage-24.0" />
+
+  <!-- Qualcomm common + SM6375 hardware HALs.
+       Branch names below are a GUESS: run the workflow once and read the
+       "Preflight" step log, which prints the real branch list of each repo. -->
+  <project path="hardware/qcom-caf/common"
+           name="android_hardware_qcom-caf_common"
+           remote="spring4ever" revision="lineage-24.0" />
+  <project path="hardware/qcom-caf/sm6375-6.1/audio"
+           name="android_hardware_qcom_audio-ar"
+           remote="spring4ever" revision="lineage-24.0" />
+  <project path="hardware/qcom-caf/sm6375-6.1/display"
+           name="android_hardware_qcom_display"
+           remote="spring4ever" revision="lineage-24.0" />
+
+  <!-- Qualcomm opensource vendor components -->
+  <project path="vendor/qcom/opensource/agm"
+           name="android_vendor_qcom_opensource_agm"
+           remote="spring4ever" revision="lineage-24.0" />
+  <project path="vendor/qcom/opensource/arpal-lx"
+           name="android_vendor_qcom_opensource_arpal-lx"
+           remote="spring4ever" revision="lineage-24.0" />
+  <project path="vendor/qcom/opensource/audioreach-graphservices"
+           name="android_vendor_qcom_opensource_audioreach-graphservices"
+           remote="spring4ever" revision="lineage-24.0" />
+  <project path="vendor/qcom/opensource/dataipa"
+           name="android_vendor_qcom_opensource_dataipa"
+           remote="spring4ever" revision="lineage-24.0" />
+  <project path="vendor/qcom/opensource/data-ipa-cfg-mgr"
+           name="android_vendor_qcom_opensource_data-ipa-cfg-mgr"
+           remote="spring4ever" revision="lineage-24.0" />
+</manifest>
