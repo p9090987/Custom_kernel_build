@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       runner:
-        description: "Runner label: ubuntu-latest (free hosted, 6h limit) or your self-hosted label"
-        default: "ubuntu-latest"
+        description: "Runner label: ubuntu-24.04 (free hosted, 6h limit) or your self-hosted label"
+        default: "ubuntu-24.04"
         type: string
       build_type:
         description: "Build variant"
@@ -58,7 +58,7 @@ jobs:
         run: echo "WORKDIR=$HOME/lineage" >> "$GITHUB_ENV"
 
       - name: Free disk space (hosted runner only)
-        if: ${{ inputs.runner == 'ubuntu-latest' }}
+        if: ${{ startsWith(inputs.runner, 'ubuntu-') }}
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
             /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/share/swift \
@@ -67,7 +67,7 @@ jobs:
           df -h /
 
       - name: Add swap (hosted runner only)
-        if: ${{ inputs.runner == 'ubuntu-latest' }}
+        if: ${{ startsWith(inputs.runner, 'ubuntu-') }}
         run: |
           sudo swapoff -a || true
           sudo fallocate -l 8G /mnt/swapfile
@@ -175,4 +175,3 @@ jobs:
             ${{ env.WORKDIR }}/out/target/product/spring/init_boot.img
             ${{ env.WORKDIR }}/out/target/product/spring/vendor_boot.img
             ${{ env.WORKDIR }}/out/target/product/spring/dtbo.img
-            
