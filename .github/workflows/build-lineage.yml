@@ -109,10 +109,12 @@ jobs:
       - name: Repo sync
         run: |
           cd "$WORKDIR"
+          ok=0
           for i in 1 2 3; do
-            repo sync -c -j"$(nproc)" --force-sync --no-clone-bundle --no-tags && break
+            if repo sync -c -j"$(nproc)" --force-sync --no-clone-bundle --no-tags; then ok=1; break; fi
             echo "sync failed, retry $i"; sleep 20
           done
+          if [ "$ok" != 1 ]; then echo "::error::repo sync failed 3 times - read the log above"; exit 1; fi
           df -h "$WORKDIR"
 
       - name: Verify required trees exist
@@ -173,3 +175,4 @@ jobs:
             ${{ env.WORKDIR }}/out/target/product/spring/init_boot.img
             ${{ env.WORKDIR }}/out/target/product/spring/vendor_boot.img
             ${{ env.WORKDIR }}/out/target/product/spring/dtbo.img
+            
