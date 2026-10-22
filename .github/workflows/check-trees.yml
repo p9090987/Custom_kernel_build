@@ -1,0 +1,100 @@
+name: Check trees (fast, no big download)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clone every repo in spring.xml (shallow) and check files
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET, subprocess, os, sys
+          root = ET.parse('local_manifests/spring.xml').getroot()
+          remotes = {r.get('name'): r.get('fetch') for r in root.findall('remote')}
+          base = '/tmp/tree'
+          env = {**os.environ, 'GIT_TERMINAL_PROMPT': '0'}
+          bad = 0
+          for p in root.findall('project'):
+              path, name, rev = p.get('path'), p.get('name'), p.get('revision')
+              url = remotes[p.get('remote')] + '/' + name
+              r = subprocess.run(['git', 'clone', '-q', '--depth=1', '-b', rev, url, os.path.join(base, path)],
+                                 capture_output=True, text=True, env=env)
+              if r.returncode == 0:
+                  print(f'OK      {path}  ({rev})')
+              else:
+                  bad += 1
+                  print(f'::error::CLONE FAILED {path}  {url} @ {rev}  {r.stderr.strip()[:200]}')
+          print()
+          need = [
+              'hardware/qcom-caf/sm6375-6.1/audio/primary-hal/configs/common/manifest_non_qmaa.xml',
+              'hardware/qcom-caf/sm6375-6.1/audio/primary-hal/configs/common/manifest_non_qmaa_extn.xml',
+              'hardware/qcom-caf/common/common.mk',
+              'hardware/qcom-caf/common/compatibility_matrix.xml',
+              'vendor/xiaomi/spring/BoardConfigVendor.mk',
+              'vendor/xiaomi/spring/spring-vendor.mk',
+              'device/xiaomi/spring/BoardConfig.mk',
+              'device/xiaomi/spring/lineage_spring.mk',
+              'device/xiaomi/spring-kernel/images/kernel',
+          ]
+          for f in need:
+              fp = os.path.join(base, f)
+              if os.path.isfile(fp):
+                  size = os.path.getsize(fp)
+                  note = '   <-- looks like a git-lfs pointer, not the real file!' if size < 2000 and f.endswith('images/kernel') else ''
+                  print(f'OK      {f}  ({size} bytes){note}')
+              else:
+                  bad += 1
+                  print(f'::error::MISSING FILE {f}')
+          sys.exit(1 if bad else 0)
+          PY
+
+      - name: Check what LineageOS 24.0 already provides
+        shell: bash
+        run: |
+          export GIT_TERMINAL_PROMPT=0
+          git clone -q --depth=1 -b lineage-24.0 https://github.com/LineageOS/android /tmp/lmanifest
+          python3 - <<'PY'
+          import glob, re, sys
+          import xml.etree.ElementTree as ET
+          text = ''
+          for f in glob.glob('/tmp/lmanifest/**/*.xml', recursive=True):
+              text += open(f, errors='replace').read()
+          paths = set(re.findall(r'path="([^"]+)"', text))
+          names = set(re.findall(r'name="([^"]+)"', text))
+          bad = 0
+          print('--- Paths we expect LineageOS to provide ---')
+          for p in ['hardware/xiaomi', 'vendor/qcom/opensource/usb', 'vendor/qcom/opensource/vibrator',
+                    'device/qcom/sepolicy_vndr', 'hardware/lineage/interfaces', 'hardware/qcom-caf/common']:
+              if p in paths:
+                  print(f'OK      {p}')
+              else:
+                  print(f'::warning::NOT in LineageOS manifest: {p}')
+                  near = sorted(x for x in paths if x.startswith(p.rsplit("/", 1)[0] + '/'))[:8]
+                  if near: print('          similar paths:', ', '.join(near))
+          print()
+          print('--- remove-project entries in spring.xml must exist in LineageOS manifest ---')
+          root = ET.parse('local_manifests/spring.xml').getroot()
+          for r in root.findall('remove-project'):
+              n, opt = r.get('name'), r.get('optional') == 'true'
+              if n in names:
+                  print(f'OK      {n}')
+              elif opt:
+                  print(f'skip    {n} (optional, not in Lineage manifest)')
+              else:
+                  bad += 1
+                  print(f'::error::remove-project target not found: {n}')
+          print()
+          print('--- Do our project paths collide with LineageOS paths? ---')
+          for p in root.findall('project'):
+              if p.get('path') in paths:
+                  print(f'::warning::path already in LineageOS manifest: {p.get("path")} (needs a remove-project)')
+          sys.exit(1 if bad else 0)
+          PY
+          
